@@ -145,6 +145,14 @@ def main():
 		filename=args.filename)
 
 	ax = plt.gca() # get current axis
+	if args.xlim is not None:
+		plt.xlim((args.xlim[0], args.xlim[1]))
+		# modify xticks
+		xticks, label = plt.xticks()
+		updated_label = [str(float(tick.get_text())-args.xlim[0]) for tick in label]
+		ax.set_xticks(xticks)
+		ax.set_xticklabels(updated_label)
+  
 	if args.time:
 		if args.time_unit == 'h' or args.time_unit == 'min':
 			ax.xaxis.set_major_locator(mticker.MultipleLocator(args.time_interval))
@@ -160,13 +168,7 @@ def main():
 		else:
 			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=False)
 
-	if args.xlim is not None:
-		plt.xlim((args.xlim[0], args.xlim[1]))
-		# modify xticks
-		xticks, label = plt.xticks()
-		updated_label = [str(float(tick.get_text())-args.xlim[0]) for tick in label]
-		ax.set_xticks(xticks)
-		ax.set_xticklabels(updated_label)
+	
 
 	if args.save:
 		plt.savefig(args.log_dir + 'figure', dpi=args.dpi, bbox_inches='tight')
