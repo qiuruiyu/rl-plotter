@@ -161,7 +161,12 @@ def main():
 			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=False)
 
 	if args.xlim is not None:
-		plt.xlim((args.xmin, args.xmax))
+		plt.xlim((args.xlim[0], args.xlim[1]))
+		# modify xticks
+		xticks, label = plt.xticks()
+		updated_label = [str(float(tick.get_text()-args.xlim[0])) for tick in xticks]
+		ax.set_xticks(xticks)
+		ax.set_xticklabels(updated_label)
 
 	if args.save:
 		plt.savefig(args.log_dir + 'figure', dpi=args.dpi, bbox_inches='tight')
