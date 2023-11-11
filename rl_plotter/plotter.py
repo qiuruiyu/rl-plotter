@@ -61,9 +61,10 @@ def main():
 
 	parser.add_argument('--xformat', default='',
 						help='x-axis format')
-	parser.add_argument('--xlim', type=int, default=None,
-						help='x-axis limitation (default: None)')
-	
+	# parser.add_argument('--xlim', type=int, default=None,
+	# 					help='x-axis limitation (default: None)')
+	parser.add_argument('--xlim', metavar=('xmin', 'xmax'), type=int, nargs=2, default=None,
+                     	help='x-axis limitation (default: None)')
 	parser.add_argument('--log_dir', default='./',
 						help='log dir (default: ./)')
 	parser.add_argument('--filters', default=[''], nargs='+',
@@ -160,7 +161,7 @@ def main():
 			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=False)
 
 	if args.xlim is not None:
-		plt.xlim((0, args.xlim))
+		plt.xlim((args.xmin, args.xmax))
 
 	if args.save:
 		plt.savefig(args.log_dir + 'figure', dpi=args.dpi, bbox_inches='tight')

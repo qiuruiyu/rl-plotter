@@ -22,7 +22,8 @@ class Logger():
             print(lu.colorize(f"\nDebug mode is activate !!!\nLog will NOT be saved !!!\n", 'red', bold=True))
         else:
             num_exps = 0
-            self.log_dir = f"./{log_dir}/{exp_name.replace('-', '_')}_{env_name.replace('-', '_')}_seed{seed}"
+            # self.log_dir = f"./{log_dir}/{exp_name.replace('-', '_')}_{env_name.replace('-', '_')}_seed{seed}"
+            self.log_dir = f"./{log_dir}/{exp_name.replace('-', '_')}_{env_name.replace('-', '_')}"
             while True:
                 if os.path.exists(f"{self.log_dir}-{str(num_exps)}/"):
                     num_exps += 1
