@@ -166,6 +166,8 @@ def main():
 			#ax.xaxis.set_major_formatter(mticker.LogFormatterSciNotation())
 			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=True)
 		else:
+			formatter = mticker.ScalarFormatter(useMathText=False)
+			ax.xaxis.set_major_formatter(formatter)
 			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=False)
 
 	
