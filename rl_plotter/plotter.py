@@ -164,7 +164,7 @@ def main():
 		plt.xlim((args.xlim[0], args.xlim[1]))
 		# modify xticks
 		xticks, label = plt.xticks()
-		updated_label = [str(float(tick.get_text())-args.xlim[0]) for tick in xticks]
+		updated_label = [str(float(tick.get_text())-args.xlim[0]) for tick in label]
 		ax.set_xticks(xticks)
 		ax.set_xticklabels(updated_label)
 
