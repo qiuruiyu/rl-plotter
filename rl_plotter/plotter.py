@@ -9,6 +9,24 @@ import matplotlib.ticker as mticker
 from rl_plotter import plot_utils as pu
 
 
+class MyFormatter(mticker.ScalarFormatter):
+	def __init__(self, useOffset=None, useMathText=None, useLocale=None, xmin: float=None) -> None:
+		super().__init__(useOffset, useMathText, useLocale)
+		if xmin is not None:
+			self.xmin = xmin 
+		else:
+			self.xmin = 0
+
+	def __call__(self, x: float, pos: int = ...) -> str:
+		x = x - self.xmin 
+		return super().__call__(x, pos)
+
+	# def format_data(self, value) -> str:
+	# 	print(self.xmin)
+	# 	value = value - self.xmin 
+	# 	return super().format_data(value)
+
+
 def main():
 	parser = argparse.ArgumentParser(description='plotter')
 	parser.add_argument('--fig_length', type=int, default=6, 
@@ -147,15 +165,6 @@ def main():
 		filename=args.filename)
 
 	ax = plt.gca() # get current axis
-	if args.xlim is not None:
-		plt.xlim((args.xlim[0], args.xlim[1]))
-		# modify xticks
-		xticks, label = plt.xticks()
-		updated_label = [str(float(tick.get_text())-args.xlim[0]) for tick in label]
-		ax.set_xticks(xticks)
-		ax.set_xticklabels(updated_label)
-	if args.ylim is not None:
-		plt.ylim((args.ylim[0], args.ylim[1]))
   
 	if args.time:
 		if args.time_unit == 'h' or args.time_unit == 'min':
@@ -170,10 +179,19 @@ def main():
 			#ax.xaxis.set_major_formatter(mticker.LogFormatterSciNotation())
 			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=True)
 		else:
-			formatter = mticker.ScalarFormatter(useMathText=False)
+			# formatter = mticker.ScalarFormatter(useMathText=False)
+			if args.xlim is not None:
+				formatter = MyFormatter(useMathText=False, xmin=args.xlim[0])
+				print(1)
+			else:
+				formatter = mticker.ScalarFormatter(useMathText=False)
+			formatter.set_powerlimits((0, 0))
 			ax.xaxis.set_major_formatter(formatter)
-			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=False)
-
+   
+	if args.xlim is not None:
+		plt.xlim((args.xlim[0], args.xlim[1]))
+	if args.ylim is not None:
+		plt.ylim((args.ylim[0], args.ylim[1]))
 	
 
 	if args.save:
