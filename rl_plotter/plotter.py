@@ -65,6 +65,8 @@ def main():
 	# 					help='x-axis limitation (default: None)')
 	parser.add_argument('--xlim', metavar=('xmin', 'xmax'), type=int, nargs=2, default=None,
                      	help='x-axis limitation (default: None)')
+	parser.add_argument('--xlim', metavar=('ymin', 'ymax'), type=int, nargs=2, default=None,
+                     	help='y-axis limitation (default: None)')
 	parser.add_argument('--log_dir', default='./',
 						help='log dir (default: ./)')
 	parser.add_argument('--filters', default=[''], nargs='+',
@@ -152,6 +154,8 @@ def main():
 		updated_label = [str(float(tick.get_text())-args.xlim[0]) for tick in label]
 		ax.set_xticks(xticks)
 		ax.set_xticklabels(updated_label)
+	if args.ylim is not None:
+		plt.ylim((args.ylim[0], args.ylim[1]))
   
 	if args.time:
 		if args.time_unit == 'h' or args.time_unit == 'min':
