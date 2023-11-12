@@ -10,6 +10,8 @@ from rl_plotter import plot_utils as pu
 
 
 class MyFormatter(mticker.ScalarFormatter):
+	"""Inherited from ScalarFormatter with xlim, start from zero 
+	"""
 	def __init__(self, useOffset=None, useMathText=None, useLocale=None, xmin: float=None) -> None:
 		super().__init__(useOffset, useMathText, useLocale)
 		if xmin is not None:
@@ -20,11 +22,6 @@ class MyFormatter(mticker.ScalarFormatter):
 	def __call__(self, x: float, pos: int = ...) -> str:
 		x = x - self.xmin 
 		return super().__call__(x, pos)
-
-	# def format_data(self, value) -> str:
-	# 	print(self.xmin)
-	# 	value = value - self.xmin 
-	# 	return super().format_data(value)
 
 
 def main():
@@ -182,7 +179,6 @@ def main():
 			# formatter = mticker.ScalarFormatter(useMathText=False)
 			if args.xlim is not None:
 				formatter = MyFormatter(useMathText=False, xmin=args.xlim[0])
-				print(1)
 			else:
 				formatter = mticker.ScalarFormatter(useMathText=False)
 			formatter.set_powerlimits((0, 0))
