@@ -65,7 +65,7 @@ def main():
 	# 					help='x-axis limitation (default: None)')
 	parser.add_argument('--xlim', metavar=('xmin', 'xmax'), type=int, nargs=2, default=None,
                      	help='x-axis limitation (default: None)')
-	parser.add_argument('--xlim', metavar=('ymin', 'ymax'), type=int, nargs=2, default=None,
+	parser.add_argument('--ylim', metavar=('ymin', 'ymax'), type=int, nargs=2, default=None,
                      	help='y-axis limitation (default: None)')
 	parser.add_argument('--log_dir', default='./',
 						help='log dir (default: ./)')
