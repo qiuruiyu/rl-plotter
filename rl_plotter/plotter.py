@@ -9,6 +9,21 @@ import matplotlib.ticker as mticker
 from rl_plotter import plot_utils as pu
 
 
+class MyFormatter(mticker.ScalarFormatter):
+	"""Inherited from ScalarFormatter with xlim, start from zero 
+	"""
+	def __init__(self, useOffset=None, useMathText=None, useLocale=None, xmin: float=None) -> None:
+		super().__init__(useOffset, useMathText, useLocale)
+		if xmin is not None:
+			self.xmin = xmin 
+		else:
+			self.xmin = 0
+
+	def __call__(self, x: float, pos: int = ...) -> str:
+		x = x - self.xmin 
+		return super().__call__(x, pos)
+
+
 def main():
 	parser = argparse.ArgumentParser(description='plotter')
 	parser.add_argument('--fig_length', type=int, default=6, 
@@ -61,9 +76,12 @@ def main():
 
 	parser.add_argument('--xformat', default='',
 						help='x-axis format')
-	parser.add_argument('--xlim', type=int, default=None,
-						help='x-axis limitation (default: None)')
-	
+	# parser.add_argument('--xlim', type=int, default=None,
+	# 					help='x-axis limitation (default: None)')
+	parser.add_argument('--xlim', metavar=('xmin', 'xmax'), type=int, nargs=2, default=None,
+                     	help='x-axis limitation (default: None)')
+	parser.add_argument('--ylim', metavar=('ymin', 'ymax'), type=int, nargs=2, default=None,
+                     	help='y-axis limitation (default: None)')
 	parser.add_argument('--log_dir', default='./',
 						help='log dir (default: ./)')
 	parser.add_argument('--filters', default=[''], nargs='+',
@@ -144,6 +162,7 @@ def main():
 		filename=args.filename)
 
 	ax = plt.gca() # get current axis
+  
 	if args.time:
 		if args.time_unit == 'h' or args.time_unit == 'min':
 			ax.xaxis.set_major_locator(mticker.MultipleLocator(args.time_interval))
@@ -157,10 +176,19 @@ def main():
 			#ax.xaxis.set_major_formatter(mticker.LogFormatterSciNotation())
 			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=True)
 		else:
-			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=False)
-
+			# formatter = mticker.ScalarFormatter(useMathText=False)
+			if args.xlim is not None:
+				formatter = MyFormatter(useMathText=False, xmin=args.xlim[0])
+			else:
+				formatter = mticker.ScalarFormatter(useMathText=False)
+			formatter.set_powerlimits((0, 0))
+			ax.xaxis.set_major_formatter(formatter)
+   
 	if args.xlim is not None:
-		plt.xlim((0, args.xlim))
+		plt.xlim((args.xlim[0], args.xlim[1]))
+	if args.ylim is not None:
+		plt.ylim((args.ylim[0], args.ylim[1]))
+	
 
 	if args.save:
 		plt.savefig(args.log_dir + 'figure', dpi=args.dpi, bbox_inches='tight')
