@@ -35,9 +35,8 @@ class Logger():
             # header={"t_start": time.time(), 'env_id' : env_name, 'exp_name': exp_name, 'seed': seed}
             # header = '# {} \n'.format(json.dumps(header))
             # self.csv_file.write(header)
-            self.logger = csv.DictWriter(self.csv_file, fieldnames=('mean_score', 'total_steps', 'std_score', 'max_score', 'min_score'))
-            self.logger.writeheader()
-            self.csv_file.flush()
+            self.fieldnames = ['total_steps']  # 基础字段
+            self.logger = None  # 初始化时先设为None，在第一次update时再创建DictWriter
 
             if config != None:
                 lu.save_config(exp_name, config, self.log_dir)
@@ -52,18 +51,34 @@ class Logger():
             Score is a list
         '''
         current_log_time = time.time()
-        avg_score = np.mean(score)
-        std_score = np.std(score)
-        max_score = np.max(score)
-        min_score = np.min(score)
+        # avg_score = np.mean(score)
+        # std_score = np.std(score)
+        # max_score = np.max(score)
+        # min_score = np.min(score)
 
         print(lu.colorize(f"\nTime: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}, Time spent from previous logger: {(current_log_time - self.previous_log_time):.3f} s", 'yellow', bold=True))
         print(lu.colorize(f"Evaluation over {len(score)} episodes after {total_steps}:", 'yellow', bold=True))
-        print(lu.colorize(f"Avg: {avg_score:.3f} Std: {std_score:.3f} Max: {max_score:.3f} Min: {min_score:.3f}\n", 'yellow', bold=True))
+        # print(lu.colorize(f"Avg: {avg_score:.3f} Std: {std_score:.3f} Max: {max_score:.3f} Min: {min_score:.3f}\n", 'yellow', bold=True))
+        if score[0].shape[-1] == 1:
+            score = score[0]
+        else:
+            score = score[0].squeeze()
+        score_str = " ".join([f"Score_{i}: {float(score[i]):.3f}" for i in range(len(score))])
+        print(lu.colorize(score_str, 'yellow', bold=True))
         self.previous_log_time = current_log_time
         
         if not self.debug:
-            epinfo = {"mean_score": avg_score, "total_steps": total_steps, "std_score": std_score, "max_score": max_score, "min_score": min_score}
+            # 如果是第一次update，根据score长度创建fieldnames
+            if self.logger is None:
+                self.fieldnames.extend([f'score_{i}' for i in range(len(score))])
+                self.logger = csv.DictWriter(self.csv_file, fieldnames=self.fieldnames)
+                self.logger.writeheader()
+                self.csv_file.flush()
+            
+            epinfo = {}
+            for i, s in enumerate(score):
+                epinfo[f"score_{i}"] = s
+            epinfo["total_steps"] = total_steps
             self.logger.writerow(epinfo)
             self.csv_file.flush()
     
@@ -138,7 +153,10 @@ class EvalLogger():
         self.previous_log_time = current_log_time
         
         if not self.debug:
-            epinfo = {"mean_score": avg_score, "total_steps": total_steps, "std_score": std_score, "max_score": max_score, "min_score": min_score}
+            # epinfo = {"mean_score": avg_score, "total_steps": total_steps, "std_score": std_score, "max_score": max_score, "min_score": min_score}
+            epinfo = {"total_steps": total_steps}
+            for i, s in enumerate(score):
+                epinfo[f"score_{i}"] = s
             self.logger.writerow(epinfo)
             self.csv_file.flush()
     

@@ -56,6 +56,9 @@ def main():
 						help='shaded region corresponding to standard deviation of the group')
 	parser.add_argument('--shaded_err', action='store_true',
 						help='shaded region corresponding to error in mean estimate')
+	# ADDED: 
+	parser.add_argument('--normalize', action='store_true',
+						help='normalize the results')
 	parser.add_argument('--legend_loc', type=int, default=0,
 						help='location of legend')
 	parser.add_argument('--legend_outside', action='store_true',
@@ -80,7 +83,7 @@ def main():
 	# 					help='x-axis limitation (default: None)')
 	parser.add_argument('--xlim', metavar=('xmin', 'xmax'), type=int, nargs=2, default=None,
                      	help='x-axis limitation (default: None)')
-	parser.add_argument('--ylim', metavar=('ymin', 'ymax'), type=int, nargs=2, default=None,
+	parser.add_argument('--ylim', metavar=('ymin', 'ymax'), type=float, nargs=2, default=None,
                      	help='y-axis limitation (default: None)')
 	parser.add_argument('--log_dir', default='./',
 						help='log dir (default: ./)')
@@ -94,6 +97,10 @@ def main():
 					help='save figure')
 	parser.add_argument('--dpi', type=int, default=400,
 						help='figure dpi (default: 400)')
+	parser.add_argument('--fontsize', type=float, default=16,
+						help='font size (default: 16)')
+	parser.add_argument('--save-name', default='figure.png',
+						help='save figure name (default: figure.png)')
 	args = parser.parse_args()
 
 	xscale = 1
@@ -130,13 +137,14 @@ def main():
 	# rl-plotter's evaluator
 	if args.filename == 'evaluator.csv':
 		args.xkey = 'total_steps'
-		if len(args.ykey) == 1:
-			args.ykey = ['mean_score']
+		# if len(args.ykey) == 1:
+			# args.ykey = ['mean_score']
+			# args.ykey = ['score_0']
 
 	if args.save is False:
 		args.show = True
 
-	allresults = pu.load_results(args.log_dir, filename=args.filename, filters=args.filters)
+	allresults = pu.load_results(args.log_dir, filename=args.filename, filters=args.filters, normalize=args.normalize)
 	pu.plot_results(allresults,
 		fig_length=args.fig_length,
 		fig_width=args.fig_width,
@@ -159,7 +167,8 @@ def main():
 		legend_group_num=not args.no_legend_group_num,
 		legend_borderpad=args.borderpad,
 		legend_labelspacing=args.labelspacing,
-		filename=args.filename)
+		filename=args.filename,
+		font_size=args.fontsize)
 
 	ax = plt.gca() # get current axis
   
@@ -167,14 +176,23 @@ def main():
 		if args.time_unit == 'h' or args.time_unit == 'min':
 			ax.xaxis.set_major_locator(mticker.MultipleLocator(args.time_interval))
 		ax.xaxis.set_major_formatter(mticker.FormatStrFormatter("%d" + args.time_unit))
+		# 设置时间格式的字体大小
+		ax.tick_params(axis='x', labelsize=args.fontsize)
 	else:
 		if args.xformat == 'eng':
 			ax.xaxis.set_major_formatter(mticker.EngFormatter())
+			# 设置工程格式的字体大小
+			ax.tick_params(axis='x', labelsize=args.fontsize)
 		elif args.xformat == 'log':
 			ax.xaxis.set_major_formatter(mticker.LogFormatter())
+			# 设置对数格式的字体大小
+			ax.tick_params(axis='x', labelsize=args.fontsize)
 		elif args.xformat == 'sci':
 			#ax.xaxis.set_major_formatter(mticker.LogFormatterSciNotation())
-			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=True)
+			plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0), useMathText=True,)
+			# 设置科学计数法的字体大小
+			ax.tick_params(axis='x', labelsize=args.fontsize)
+			ax.xaxis.offsetText.set_fontsize(args.fontsize)
 		else:
 			# formatter = mticker.ScalarFormatter(useMathText=False)
 			if args.xlim is not None:
@@ -183,6 +201,10 @@ def main():
 				formatter = mticker.ScalarFormatter(useMathText=False)
 			formatter.set_powerlimits((0, 0))
 			ax.xaxis.set_major_formatter(formatter)
+			# 设置默认格式的字体大小
+			ax.tick_params(axis='x', labelsize=args.fontsize)
+			# 设置偏移量文本的字体大小（如果有的话）
+			ax.xaxis.offsetText.set_fontsize(args.fontsize)
    
 	if args.xlim is not None:
 		plt.xlim((args.xlim[0], args.xlim[1]))
@@ -191,7 +213,7 @@ def main():
 	
 
 	if args.save:
-		plt.savefig(args.log_dir + 'figure', dpi=args.dpi, bbox_inches='tight')
+		plt.savefig(args.log_dir + args.save_name, dpi=args.dpi, bbox_inches='tight')
 	if args.show:
 		plt.show()
 	
