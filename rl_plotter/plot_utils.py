@@ -163,8 +163,32 @@ def load_csv_results(dir, filename="monitor.csv"):
 	#df.headers = headers # HACK to preserve backwards compatibility
 	return df
 
-def load_results(root_dir_or_dirs="./", filename="monitor.csv", filters=['']):
+# def load_results(root_dir_or_dirs="./", filename="monitor.csv", filters=['']):
 
+#   if isinstance(root_dir_or_dirs, str):
+#       rootdirs = [osp.expanduser(root_dir_or_dirs)]
+#   else:
+#       rootdirs = [osp.expanduser(d) for d in root_dir_or_dirs]
+#   allresults = []
+    
+#   for rootdir in rootdirs:
+#       assert osp.exists(rootdir), "%s doesn't exist"%rootdir
+#       for dirname, dirs, files in os.walk(rootdir):
+#           for filter in filters:
+#               if filter in dirname:
+#                   result = {'dirname' : dirname, "data": None}
+
+#                   file_re = re.compile(r'(\d+\.)?(\d+\.)?' + filename)
+#                   if any([f for f in files if file_re.match(f)]):
+#                       csv_result = load_csv_results(dirname, filename)
+#                       if csv_result is not None:
+#                           result['data'] = pandas.DataFrame(csv_result)
+
+#                   if result['data'] is not None:
+#                       allresults.append(result)
+#   return allresults
+
+def load_results(root_dir_or_dirs="./", filename="monitor.csv", filters=[''], normalize=False):
 	if isinstance(root_dir_or_dirs, str):
 		rootdirs = [osp.expanduser(root_dir_or_dirs)]
 	else:
@@ -186,8 +210,38 @@ def load_results(root_dir_or_dirs="./", filename="monitor.csv", filters=['']):
 
 					if result['data'] is not None:
 						allresults.append(result)
-	return allresults
 
+	if normalize and len(allresults) > 0:
+		# 找出所有数值列
+		numeric_columns = []
+		for result in allresults:
+			if result['data'] is not None:
+				numeric_columns = result['data'].select_dtypes(include=[np.number]).columns
+				break
+		
+		# 排除横坐标相关的列
+		exclude_columns = ['t', 'l', 'total_steps', 'Step', 'step', 'steps', 'index']
+		numeric_columns = [col for col in numeric_columns if col not in exclude_columns]
+		
+		# 对每个数值列进行归一化
+		for col in numeric_columns:
+			# 收集所有数据以计算全局最大最小值
+			all_values = []
+			for result in allresults:
+				if result['data'] is not None and col in result['data'].columns:
+					all_values.extend(result['data'][col].values)
+			
+			if len(all_values) > 0:
+				global_min = np.min(all_values)
+				global_max = np.max(all_values)
+				
+				# 避免除以零
+				if global_max != global_min:
+					for result in allresults:
+						if result['data'] is not None and col in result['data'].columns:
+							result['data'][col] = (result['data'][col] - global_min) / (global_max - global_min)
+
+	return allresults
 
 def smooth(y, radius, mode='two_sided', valid_only=False):
 	'''
@@ -245,11 +299,14 @@ def plot_results(
 	legend_group_num=True,
 	legend_borderpad=1.0,
 	legend_labelspacing=1.0,
-	filename="monitor.csv"
+	filename="monitor.csv",
+	font_size=16
 ):
 	default_samples = 512
 	if average_group:
 		resample = resample or default_samples
+
+	plt.rcParams.update({'font.size': font_size})
 
 	if style is not None: plt.style.use(style)
 	_, plt1 = plt.subplots(figsize=(fig_length , fig_width))
@@ -312,9 +369,9 @@ def plot_results(
 					# handle dual y label
 				if ylabel is not None:
 					if yduel:
-						pltt.set_ylabel(current_group['ykey'])
+						pltt.set_ylabel(current_group['ykey'], fontsize=font_size)
 					else:
-						pltt.set_ylabel(ylabel)
+						pltt.set_ylabel(ylabel, fontsize=font_size)
 				current_group['legend'] = legend
 			
 	if average_group:
@@ -352,15 +409,15 @@ def plot_results(
 			# handle dual y label
 			if ylabel is not None:
 				if yduel:
-					pltt.set_ylabel(current_group['ykey'])
+					pltt.set_ylabel(current_group['ykey'], fontsize=font_size)
 				else:
-					pltt.set_ylabel(ylabel)
+					pltt.set_ylabel(ylabel, fontsize=font_size)
 			
 			current_group['legend'] = legend
 			if shaded_err:
 				pltt.fill_between(usex, ymean - ystderr, ymean + ystderr, color=color, alpha=.4)
 			if shaded_std:
-				pltt.fill_between(usex, ymean - ystd,    ymean + ystd,    color=color, alpha=.2)
+				pltt.fill_between(usex, ymean - ystd * 2,    ymean + ystd * 2,    color=color, alpha=.2)
 
 	# add legend
 	# https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.legend.html
@@ -369,16 +426,21 @@ def plot_results(
 			plt.legend(
 					[groups_results[key]['legend'] for key in groups_results.keys()],
 					['%s (%i)'%(key.replace('without', 'w/o').replace('_', '-'), groups_results[key]['num']) for key in groups_results.keys()] if average_group else groups_results.keys(),
-					loc=9 if legend_outside else legend_loc, bbox_to_anchor = (0.5,-0.1) if legend_outside else (1,1) if legend_outside else None, borderpad=legend_borderpad, labelspacing=legend_labelspacing, ncol=len(groups_results.keys()) if legend_outside else 1)
+					loc=9 if legend_outside else legend_loc, bbox_to_anchor = (0.5,-0.1) if legend_outside else (1,1) if legend_outside else None, borderpad=legend_borderpad, labelspacing=legend_labelspacing, ncol=len(groups_results.keys()) if legend_outside else 1, fontsize=font_size)
 		else:
 			plt.legend(
 					[groups_results[key]['legend'] for key in groups_results.keys()],
 					['%s'%(key.replace('without', 'w/o').replace('_', '-')) for key in groups_results.keys()] if average_group else groups_results.keys(),
-					loc=9 if legend_outside else legend_loc, bbox_to_anchor = (0.5,-0.1) if legend_outside else (1,1) if legend_outside else None, borderpad=legend_borderpad, labelspacing=legend_labelspacing, ncol=len(groups_results.keys()) if legend_outside else 1)
+					loc=9 if legend_outside else legend_loc, bbox_to_anchor = (0.5,-0.1) if legend_outside else (1,1) if legend_outside else None, borderpad=legend_borderpad, labelspacing=legend_labelspacing, ncol=len(groups_results.keys()) if legend_outside else 1, fontsize=font_size)
 	# add title
-	plt.title(title)
+	plt.title(title, fontsize=font_size)
 	# add xlabels
-	if xlabel is not None: plt.xlabel(xlabel)
+	if xlabel is not None: plt.xlabel(xlabel, fontsize=font_size)
+	
+	# set tick label font size
+	plt1.tick_params(axis='both', which='major', labelsize=font_size)
+	if len(ykey) == 2 and yduel:
+		plt2.tick_params(axis='y', which='major', labelsize=font_size)
 
 
 def plot_data(data, xaxis='total_steps', value="mean_score", condition="Condition1", smooth=1, 
@@ -386,7 +448,7 @@ def plot_data(data, xaxis='total_steps', value="mean_score", condition="Conditio
         legend_loc=0,
         legend_borderpad=1.0,
         legend_labelspacing=1.0,
-        font_scale=1.5,
+        font_size=16,
         **kwargs):
     import seaborn as sns
     if smooth > 1:
@@ -407,7 +469,7 @@ def plot_data(data, xaxis='total_steps', value="mean_score", condition="Conditio
     
     data.sort_values(by='Condition1', axis=0)
 
-    sns.set(style="darkgrid", font_scale=font_scale)
+    sns.set_theme(style="darkgrid")
     sns.lineplot(data=data, x=xaxis, y=value, hue=condition, ci='sd', **kwargs)
     handles, labels = plt.gca().get_legend_handles_labels()
 
